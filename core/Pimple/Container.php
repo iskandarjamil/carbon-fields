@@ -58,7 +58,11 @@ class Container implements \ArrayAccess
         $this->protected = new \SplObjectStorage();
 
         foreach ($values as $key => $value) {
-            $this->offsetSet($key, $value);
+			try {
+				$this->assign($key, $value);
+			} catch (\Throwable $th) {
+				$this->offsetSet($key, $value);
+			}
         }
     }
 
@@ -174,7 +178,11 @@ class Container implements \ArrayAccess
             throw new ExpectedInvokableException('Service definition is not a Closure or invokable object.');
         }
 
-        $this->factories->attach($callable);
+		try {
+			$this->factories->assign($callable);
+		} catch (\Throwable $th) {
+			$this->factories->offsetSet($callable);
+		}
 
         return $callable;
     }
@@ -196,7 +204,7 @@ class Container implements \ArrayAccess
             throw new ExpectedInvokableException('Callable is not a Closure or invokable object.');
         }
 
-        $this->protected->attach($callable);
+        $this->protected->offsetSet($callable);
 
         return $callable;
     }
@@ -268,8 +276,17 @@ class Container implements \ArrayAccess
         };
 
         if (isset($this->factories[$factory])) {
-            $this->factories->detach($factory);
-            $this->factories->attach($extended);
+			try {
+				$this->factories->detach($factory);
+			} catch (\Throwable $th) {
+				$this->factories->offsetUnset($factory);
+			}
+
+			try {
+				$this->factories->assign($extended);
+			} catch (\Throwable $th) {
+				$this->factories->offsetSet($extended);
+			}
         }
 
         return $this[$id] = $extended;
